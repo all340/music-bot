@@ -21,6 +21,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# =========================
+# Deezer Search
+# =========================
+
 async def search_deezer(query):
     try:
         url = f"https://api.deezer.com/search?q={query}"
@@ -42,6 +46,10 @@ async def search_deezer(query):
     return None
 
 
+# =========================
+# Main Music Handler
+# =========================
+
 async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.message.text
 
@@ -55,7 +63,9 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if deezer:
         try:
-            audio_data = requests.get(deezer["preview"]).content
+            audio_data = requests.get(
+                deezer["preview"]
+            ).content
 
             with open("preview.mp3", "wb") as f:
                 f.write(audio_data)
@@ -75,22 +85,17 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     # =========================
-    # 2. YouTube fallback
+    # 2. YouTube Fallback
     # =========================
 
     ydl_opts = {
-        'format': 'bestaudio',
+        'format': 'worst',
         'noplaylist': True,
         'default_search': 'ytsearch1',
         'outtmpl': 'music.%(ext)s',
         'cookiefile': 'cookies.txt',
         'quiet': True,
-
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['web']
-            }
-        }
+        'ignoreerrors': True,
     }
 
     try:
@@ -130,10 +135,16 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# =========================
+# Start Bot
+# =========================
+
 def main():
     app = Application.builder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
+    app.add_handler(
+        CommandHandler("start", start)
+    )
 
     app.add_handler(
         MessageHandler(
