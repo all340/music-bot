@@ -1,5 +1,6 @@
 import os
 import requests
+import lyricsgenius
 
 from telegram import Update
 from telegram.ext import (
@@ -10,24 +11,48 @@ from telegram.ext import (
     filters,
 )
 
+# ===================================
+# TOKENS
+# ===================================
+
 TOKEN = os.getenv("TOKEN")
 
+GENIUS_TOKEN = "Rl7YzlhA81Ro2WuhIoEkkbtaWspiUrGtYFEYQQBp5IydshgNdbhNEEVHySEFbPC_"
 
-# =========================
+genius = lyricsgenius.Genius(GENIUS_TOKEN)
+
+# ===================================
 # START
-# =========================
+# ===================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🎵 Музыкальный бот\n\n"
-        "Отправь название песни.\n"
-        "Бот ищет музыку через Deezer."
+        "📌 Отправь:\n"
+        "- название песни\n"
+        "- или строчку из песни\n\n"
+        "Бот найдёт музыку 🔎"
     )
 
+# ===================================
+# ПОИСК ПЕСНИ ПО ТЕКСТУ
+# ===================================
 
-# =========================
+async def find_song_by_lyrics(text):
+    try:
+        song = genius.search_song(text)
+
+        if song:
+            return f"{song.artist} {song.title}"
+
+    except:
+        return None
+
+    return None
+
+# ===================================
 # DEEZER SEARCH
-# =========================
+# ===================================
 
 async def search_deezer(query):
     try:
@@ -49,15 +74,30 @@ async def search_deezer(query):
 
     return None
 
-
-# =========================
+# ===================================
 # MUSIC HANDLER
-# =========================
+# ===================================
 
 async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     query = update.message.text
 
-    await update.message.reply_text("🔎 Ищу музыку...")
+    await update.message.reply_text(
+        "🔎 Ищу песню..."
+    )
+
+    # =========================
+    # ПОИСК ПО ТЕКСТУ
+    # =========================
+
+    lyrics_result = await find_song_by_lyrics(query)
+
+    if lyrics_result:
+        query = lyrics_result
+
+    # =========================
+    # ПОИСК В DEEZER
+    # =========================
 
     deezer = await search_deezer(query)
 
@@ -67,37 +107,47 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 deezer["preview"]
             ).content
 
-            with open("preview.mp3", "wb") as f:
+            file_path = "preview.mp3"
+
+            with open(file_path, "wb") as f:
                 f.write(audio_data)
 
-            with open("preview.mp3", "rb") as audio:
+            with open(file_path, "rb") as audio:
                 await update.message.reply_audio(
                     audio=audio,
                     title=deezer["title"],
                     performer=deezer["artist"],
+                    caption=(
+                        f"🎵 {deezer['title']}\n"
+                        f"👤 {deezer['artist']}"
+                    )
                 )
 
-            os.remove("preview.mp3")
+            os.remove(file_path)
 
             return
 
         except Exception as e:
             await update.message.reply_text(
-                f"❌ Ошибка Deezer:\n{e}"
+                f"❌ Ошибка:\n{e}"
             )
 
             return
 
+    # =========================
+    # ЕСЛИ НЕ НАЙДЕНО
+    # =========================
+
     await update.message.reply_text(
-        "❌ Музыка не найдена"
+        "❌ Песня не найдена"
     )
 
-
-# =========================
+# ===================================
 # MAIN
-# =========================
+# ===================================
 
 def main():
+
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(
@@ -115,6 +165,9 @@ def main():
 
     app.run_polling()
 
+# ===================================
+# START BOT
+# ===================================
 
 if __name__ == "__main__":
     main()
