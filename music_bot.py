@@ -1,4 +1,4 @@
-import os
+    import os
 import yt_dlp
 
 from telegram import Update
@@ -15,7 +15,8 @@ TOKEN = os.getenv("TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎵 Отправь название песни"
+        "🎵 Привет!\n\n"
+        "Отправь название песни."
     )
 
 
@@ -25,19 +26,23 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔎 Ищу музыку...")
 
     ydl_opts = {
-        'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        'format': 'bestaudio/best',
         'noplaylist': True,
         'default_search': 'ytsearch1',
         'outtmpl': 'music.%(ext)s',
         'cookiefile': 'cookies.txt',
         'quiet': True,
-        'nocheckcertificate': True,
-        'ignoreerrors': True,
+
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(
+            ydl.extract_info(
                 f"ytsearch1:{query}",
                 download=True
             )
@@ -51,16 +56,15 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if not file_name:
             await update.message.reply_text(
-                "❌ Не удалось скачать музыку"
+                "❌ Музыка не найдена"
             )
             return
 
-        title = query
-
-        await update.message.reply_audio(
-            audio=open(file_name, 'rb'),
-            title=title,
-        )
+        with open(file_name, "rb") as audio:
+            await update.message.reply_audio(
+                audio=audio,
+                title=query
+            )
 
         os.remove(file_name)
 
