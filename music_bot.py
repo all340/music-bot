@@ -1,4 +1,4 @@
-    import os
+import os
 import yt_dlp
 
 from telegram import Update
@@ -15,8 +15,7 @@ TOKEN = os.getenv("TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎵 Привет!\n\n"
-        "Отправь название песни."
+        "🎵 Привет! Отправь название песни."
     )
 
 
@@ -32,12 +31,6 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'outtmpl': 'music.%(ext)s',
         'cookiefile': 'cookies.txt',
         'quiet': True,
-
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
     }
 
     try:
