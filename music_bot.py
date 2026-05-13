@@ -1,13 +1,11 @@
 import os
-import yt_dlp
-
 from telegram import Update
 from telegram.ext import (
     Application,
-    MessageHandler,
-    filters,
-    ContextTypes,
     CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
 )
 
 TOKEN = os.getenv("TOKEN")
@@ -15,53 +13,21 @@ TOKEN = os.getenv("TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎵 Привет!\n\n"
-        "Отправь название песни, и я попробую найти музыку."
+        "🎵 Привет!\n"
+        "Напиши название песни.\n\n"
+        "Например:\n"
+        "Alan Walker Faded"
     )
 
 
 async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.message.text
 
-    await update.message.reply_text("🔎 Ищу музыку...")
-
-    ydl_opts = {
-        'format': 'bestaudio',
-        'noplaylist': True,
-        'default_search': 'scsearch1',
-        'outtmpl': 'music.%(ext)s',
-        'quiet': True,
-    }
-
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(
-                f"scsearch1:{query}",
-                download=True
-            )
-
-        file_name = None
-
-        for file in os.listdir():
-            if file.startswith("music."):
-                file_name = file
-                break
-
-        if not file_name:
-            await update.message.reply_text("❌ Музыка не найдена")
-            return
-
-        title = info.get("title", "music")
-
-        await update.message.reply_audio(
-            audio=open(file_name, 'rb'),
-            title=title,
-        )
-
-        os.remove(file_name)
-
-    except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка:\n{e}")
+    await update.message.reply_text(
+        f"🔎 Ты ищешь: {query}\n\n"
+        "❗ Сейчас Railway блокирует YouTube/SoundCloud.\n"
+        "Для полноценного музыкального бота нужен VPS или cookies."
+    )
 
 
 def main():
@@ -72,7 +38,7 @@ def main():
         MessageHandler(filters.TEXT & ~filters.COMMAND, music)
     )
 
-    print("Бот запущен!")
+    print("Bot started")
 
     app.run_polling()
 
