@@ -18,10 +18,18 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔍 Ищу музыку...")
 
     ydl_opts = {
-        'format': 'bestaudio',
-        'noplaylist': True,
-        'default_search': 'ytsearch1',
-        'outtmpl': 'music.%(ext)s',
+    'format': 'bestaudio',
+    'noplaylist': True,
+    'default_search': 'ytsearch1',
+    'outtmpl': 'music.%(ext)s',
+
+    'cookiefile': 'cookies.txt',
+
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['android']
+        }
+    }
     }
 
     try:
