@@ -15,7 +15,7 @@ TOKEN = os.getenv("TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎵 Отправь название музыки"
+        "🎵 Отправь название песни"
     )
 
 
@@ -25,17 +25,22 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔎 Ищу музыку...")
 
     ydl_opts = {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio[ext=m4a]/bestaudio/best',
         'noplaylist': True,
         'default_search': 'ytsearch1',
         'outtmpl': 'music.%(ext)s',
         'cookiefile': 'cookies.txt',
         'quiet': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': True,
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(query, download=True)
+            info = ydl.extract_info(
+                f"ytsearch1:{query}",
+                download=True
+            )
 
         file_name = None
 
@@ -45,10 +50,12 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
 
         if not file_name:
-            await update.message.reply_text("❌ Музыка не найдена")
+            await update.message.reply_text(
+                "❌ Не удалось скачать музыку"
+            )
             return
 
-        title = info.get("title", "music")
+        title = query
 
         await update.message.reply_audio(
             audio=open(file_name, 'rb'),
@@ -58,15 +65,21 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
         os.remove(file_name)
 
     except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка:\n{e}")
+        await update.message.reply_text(
+            f"❌ Ошибка:\n{e}"
+        )
 
 
 def main():
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+
     app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, music)
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            music
+        )
     )
 
     print("Бот запущен!")
