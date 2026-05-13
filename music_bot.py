@@ -25,7 +25,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔎 Ищу музыку...")
 
     ydl_opts = {
-        'format': '140/251/bestaudio',
+        'format': 'bestaudio*',
         'noplaylist': True,
         'default_search': 'ytsearch1',
         'outtmpl': 'music.%(ext)s',
