@@ -1,6 +1,5 @@
 import os
 import requests
-import yt_dlp
 
 from telegram import Update
 from telegram.ext import (
@@ -14,15 +13,20 @@ from telegram.ext import (
 TOKEN = os.getenv("TOKEN")
 
 
+# =========================
+# START
+# =========================
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🎵 Музыкальный бот\n\n"
-        "Отправь название песни."
+        "Отправь название песни.\n"
+        "Бот ищет музыку через Deezer."
     )
 
 
 # =========================
-# Deezer Search
+# DEEZER SEARCH
 # =========================
 
 async def search_deezer(query):
@@ -47,17 +51,13 @@ async def search_deezer(query):
 
 
 # =========================
-# Main Music Handler
+# MUSIC HANDLER
 # =========================
 
 async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.message.text
 
     await update.message.reply_text("🔎 Ищу музыку...")
-
-    # =========================
-    # 1. Deezer Preview
-    # =========================
 
     deezer = await search_deezer(query)
 
@@ -81,62 +81,20 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             return
 
-        except:
-            pass
-
-    # =========================
-    # 2. YouTube Fallback
-    # =========================
-
-    ydl_opts = {
-        'format': 'worst',
-        'noplaylist': True,
-        'default_search': 'ytsearch1',
-        'outtmpl': 'music.%(ext)s',
-        'cookiefile': 'cookies.txt',
-        'quiet': True,
-        'ignoreerrors': True,
-    }
-
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info(
-                f"ytsearch1:{query}",
-                download=True
+        except Exception as e:
+            await update.message.reply_text(
+                f"❌ Ошибка Deezer:\n{e}"
             )
-
-        file_name = None
-
-        for file in os.listdir():
-            if file.startswith("music."):
-                file_name = file
-                break
-
-        if file_name:
-            with open(file_name, "rb") as audio:
-                await update.message.reply_audio(
-                    audio=audio,
-                    title=query
-                )
-
-            os.remove(file_name)
 
             return
 
-    except:
-        pass
-
-    # =========================
-    # Nothing found
-    # =========================
-
     await update.message.reply_text(
-        "❌ Не удалось найти музыку"
+        "❌ Музыка не найдена"
     )
 
 
 # =========================
-# Start Bot
+# MAIN
 # =========================
 
 def main():
