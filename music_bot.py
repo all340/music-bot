@@ -81,4 +81,15 @@ def main():
 
     app.add_handler(
         MessageHandler(
-            filters.TEXT & ~
+            filters.TEXT & ~filters.COMMAND,
+            music
+        )
+    )
+
+    print("Бот запущен!")
+
+    app.run_polling()
+
+
+if __name__ == "__main__":
+    main()
