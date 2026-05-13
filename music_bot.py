@@ -15,7 +15,7 @@ TOKEN = os.getenv("TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎵 Привет! Отправь название песни."
+        "🎵 Отправь название песни"
     )
 
 
@@ -25,18 +25,21 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔎 Ищу музыку...")
 
     ydl_opts = {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio',
         'noplaylist': True,
         'default_search': 'ytsearch1',
         'outtmpl': 'music.%(ext)s',
         'cookiefile': 'cookies.txt',
         'quiet': True,
+        'nocheckcertificate': True,
+        'geo_bypass': True,
+        'extract_flat': False,
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info(
-                f"ytsearch1:{query}",
+            info = ydl.extract_info(
+                f"ytsearch:{query}",
                 download=True
             )
 
@@ -49,7 +52,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if not file_name:
             await update.message.reply_text(
-                "❌ Музыка не найдена"
+                "❌ Не удалось скачать"
             )
             return
 
