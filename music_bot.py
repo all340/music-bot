@@ -1,4 +1,4 @@
-import os
+юimport os
 import yt_dlp
 
 from telegram import Update
@@ -26,7 +26,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔎 Ищу музыку...")
 
     ydl_opts = {
-        'format': '18/bestaudio/best',
+        'format': 'bestaudio',
         'noplaylist': True,
         'default_search': 'ytsearch1',
         'outtmpl': 'music.%(ext)s',
@@ -35,7 +35,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         'extractor_args': {
             'youtube': {
-                'player_client': ['android']
+                'player_client': ['web']
             }
         }
     }
@@ -43,7 +43,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.extract_info(
-                f"ytsearch1:{query} audio",
+                f"ytsearch1:{query}",
                 download=True
             )
 
@@ -56,7 +56,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if not file_name:
             await update.message.reply_text(
-                "❌ Музыка не найдена"
+                "❌ Не удалось скачать музыку"
             )
             return
 
@@ -81,15 +81,4 @@ def main():
 
     app.add_handler(
         MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            music
-        )
-    )
-
-    print("Бот запущен!")
-
-    app.run_polling()
-
-
-if __name__ == "__main__":
-    main()
+            filters.TEXT & ~
