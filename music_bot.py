@@ -25,21 +25,21 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔎 Ищу музыку...")
 
     ydl_opts = {
-        'format': 'bestaudio',
+        'format': '140/251/bestaudio',
         'noplaylist': True,
         'default_search': 'ytsearch1',
         'outtmpl': 'music.%(ext)s',
         'cookiefile': 'cookies.txt',
         'quiet': True,
-        'nocheckcertificate': True,
         'geo_bypass': True,
         'extract_flat': False,
+        'youtube_include_dash_manifest': False,
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(
-                f"ytsearch:{query}",
+            ydl.extract_info(
+                f"ytsearch1:{query} official audio",
                 download=True
             )
 
@@ -52,7 +52,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if not file_name:
             await update.message.reply_text(
-                "❌ Не удалось скачать"
+                "❌ Не удалось скачать музыку"
             )
             return
 
