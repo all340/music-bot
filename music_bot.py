@@ -9,12 +9,12 @@ from telegram.ext import (
 )
 from yt_dlp import YoutubeDL
 
-BOT_TOKEN = os.getenv("TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Привет! 🎵\n\n"
+        "🎵 Привет!\n\n"
         "Отправь название песни."
     )
 
@@ -22,29 +22,39 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def search_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.message.text
 
-    await update.message.reply_text("Ищу песню... 🔍")
+    await update.message.reply_text("🔍 Ищу песню...")
 
     try:
         ydl_opts = {
-            "format": "bestaudio",
+            "format": "bestaudio/best",
             "noplaylist": True,
             "quiet": True,
+            "cookiefile": "cookies.txt",
+            "extract_flat": False,
         }
 
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(
-                f"ytsearch:{query}",
+                f"ytsearch1:{query}",
                 download=False
             )
 
-            if not info["entries"]:
-                await update.message.reply_text("Ничего не найдено 😢")
+            if not info.get("entries"):
+                await update.message.reply_text(
+                    "😢 Ничего не найдено"
+                )
                 return
 
             video = info["entries"][0]
 
-            title = video["title"]
-            url = video["webpage_url"]
+            title = video.get("title", "Без названия")
+            url = video.get("webpage_url")
+
+            if not url:
+                await update.message.reply_text(
+                    "❌ Не удалось получить ссылку"
+                )
+                return
 
             await update.message.reply_text(
                 f"🎵 {title}\n\n{url}"
@@ -52,14 +62,16 @@ async def search_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         await update.message.reply_text(
-            f"Ошибка: {e}"
+            f"❌ Ошибка:\n{e}"
         )
 
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
+    app.add_handler(
+        CommandHandler("start", start)
+    )
 
     app.add_handler(
         MessageHandler(
