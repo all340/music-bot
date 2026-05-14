@@ -1,6 +1,7 @@
 import os
 import requests
 import lyricsgenius
+import yt_dlp
 
 from telegram import Update
 from telegram.ext import (
@@ -15,9 +16,9 @@ from telegram.ext import (
 # TOKENS
 # ===================================
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = "ТВОЙ_ТЕЛЕГРАМ_ТОКЕН"
 
-GENIUS_TOKEN = "Rl7YzlhA81Ro2WuhIoEkkbtaWspiUrGtYFEYQQBp5IydshgNdbhNEEVHySEFbPC_"
+GENIUS_TOKEN = "ТВОЙ_GENIUS_TOKEN"
 
 genius = lyricsgenius.Genius(GENIUS_TOKEN)
 
@@ -26,12 +27,13 @@ genius = lyricsgenius.Genius(GENIUS_TOKEN)
 # ===================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     await update.message.reply_text(
         "🎵 Музыкальный бот\n\n"
         "📌 Отправь:\n"
         "- название песни\n"
         "- или строчку из песни\n\n"
-        "Бот найдёт музыку 🔎"
+        "Бот найдёт и отправит полный трек 🔥"
     )
 
 # ===================================
@@ -39,7 +41,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ===================================
 
 async def find_song_by_lyrics(text):
+
     try:
+
         song = genius.search_song(text)
 
         if song:
@@ -51,28 +55,38 @@ async def find_song_by_lyrics(text):
     return None
 
 # ===================================
-# DEEZER SEARCH
+# СКАЧИВАНИЕ МУЗЫКИ
 # ===================================
 
-async def search_deezer(query):
+async def download_song(query):
+
     try:
-        url = f"https://api.deezer.com/search?q={query}"
 
-        response = requests.get(url).json()
+        ydl_opts = {
+            "format": "bestaudio/best",
+            "outtmpl": "song.%(ext)s",
+            "quiet": True,
+            "noplaylist": True,
+        }
 
-        if response.get("data"):
-            track = response["data"][0]
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+
+            info = ydl.extract_info(
+                f"ytsearch:{query}",
+                download=True
+            )
+
+            entry = info["entries"][0]
+
+            filename = ydl.prepare_filename(entry)
 
             return {
-                "title": track["title"],
-                "artist": track["artist"]["name"],
-                "preview": track["preview"],
+                "file": filename,
+                "title": entry.get("title"),
             }
 
     except:
         return None
-
-    return None
 
 # ===================================
 # MUSIC HANDLER
@@ -95,39 +109,34 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if lyrics_result:
         query = lyrics_result
 
+    await update.message.reply_text(
+        "⬇️ Скачиваю музыку..."
+    )
+
     # =========================
-    # ПОИСК В DEEZER
+    # СКАЧИВАНИЕ
     # =========================
 
-    deezer = await search_deezer(query)
+    song = await download_song(query)
 
-    if deezer:
+    if song:
+
         try:
-            audio_data = requests.get(
-                deezer["preview"]
-            ).content
 
-            file_path = "preview.mp3"
+            with open(song["file"], "rb") as audio:
 
-            with open(file_path, "wb") as f:
-                f.write(audio_data)
-
-            with open(file_path, "rb") as audio:
                 await update.message.reply_audio(
                     audio=audio,
-                    title=deezer["title"],
-                    performer=deezer["artist"],
-                    caption=(
-                        f"🎵 {deezer['title']}\n"
-                        f"👤 {deezer['artist']}"
-                    )
+                    title=song["title"],
+                    caption=f"🎵 {song['title']}"
                 )
 
-            os.remove(file_path)
+            os.remove(song["file"])
 
             return
 
         except Exception as e:
+
             await update.message.reply_text(
                 f"❌ Ошибка:\n{e}"
             )
