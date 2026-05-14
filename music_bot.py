@@ -1,4 +1,5 @@
 import os
+import yt_dlp
 
 from telegram import Update
 from telegram.ext import (
@@ -12,21 +13,80 @@ from telegram.ext import (
 TOKEN = os.getenv("TOKEN")
 
 
+# =========================
+# START
+# =========================
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🎵 Бот работает!"
+        "🎵 Отправь название песни"
     )
 
+
+# =========================
+# SEARCH YOUTUBE
+# =========================
+
+def search_song(query):
+
+    ydl_opts = {
+        "quiet": True,
+    }
+
+    try:
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+
+            info = ydl.extract_info(
+                f"ytsearch1:{query}",
+                download=False
+            )
+
+            video = info["entries"][0]
+
+            return {
+                "title": video["title"],
+                "url": video["webpage_url"]
+            }
+
+    except Exception as e:
+
+        print(e)
+
+        return None
+
+
+# =========================
+# MUSIC
+# =========================
 
 async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = update.message.text
+    query = update.message.text
 
     await update.message.reply_text(
-        f"Ты написал:\n{text}"
+        "🔎 Ищу песню..."
     )
 
+    result = search_song(query)
+
+    if not result:
+
+        await update.message.reply_text(
+            "❌ Ничего не найдено"
+        )
+
+        return
+
+    await update.message.reply_text(
+        f"🎵 {result['title']}\n\n{result['url']}"
+    )
+
+
+# =========================
+# MAIN
+# =========================
 
 def main():
 
