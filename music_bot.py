@@ -15,9 +15,9 @@ from telegram.ext import (
 # TOKENS
 # ===================================
 
-TOKEN = "TOKEN"
+TOKEN = os.getenv("TOKEN")
 
-GENIUS_TOKEN = "QyxsQUjCY_LSuhvsUMKYItRcNSBQbmLhF87WDwSEX"
+GENIUS_TOKEN = os.getenv("GENIUS_TOKEN")
 
 # ===================================
 # GENIUS
