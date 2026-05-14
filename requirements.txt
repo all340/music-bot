@@ -1,5 +1,5 @@
-python-telegram-bot==20.7
+python-telegram-bot==20.6
 requests==2.31.0
 lyricsgenius==3.0.1
 httpx==0.25.2
-yt-dlp==2025.4.30
+yt-dlp
