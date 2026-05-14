@@ -32,6 +32,8 @@ def search_song(query):
 
     ydl_opts = {
         "quiet": True,
+        "extract_flat": True,
+        "default_search": "ytsearch",
     }
 
     try:
@@ -39,20 +41,23 @@ def search_song(query):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
             info = ydl.extract_info(
-                f"ytsearch1:{query}",
+                query,
                 download=False
             )
+
+            if "entries" not in info:
+                return None
 
             video = info["entries"][0]
 
             return {
-                "title": video["title"],
-                "url": video["webpage_url"]
+                "title": video.get("title"),
+                "url": f"https://youtube.com/watch?v={video.get('id')}"
             }
 
     except Exception as e:
 
-        print(e)
+        print("ERROR:", e)
 
         return None
 
