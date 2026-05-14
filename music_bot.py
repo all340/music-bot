@@ -1,5 +1,4 @@
 import os
-import requests
 import lyricsgenius
 import yt_dlp
 
@@ -20,6 +19,10 @@ TOKEN = "ТВОЙ_ТЕЛЕГРАМ_ТОКЕН"
 
 GENIUS_TOKEN = "ТВОЙ_GENIUS_TOKEN"
 
+# ===================================
+# GENIUS
+# ===================================
+
 genius = lyricsgenius.Genius(GENIUS_TOKEN)
 
 # ===================================
@@ -37,7 +40,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ===================================
-# ПОИСК ПЕСНИ ПО ТЕКСТУ
+# ПОИСК ПО ТЕКСТУ
 # ===================================
 
 async def find_song_by_lyrics(text):
@@ -55,37 +58,58 @@ async def find_song_by_lyrics(text):
     return None
 
 # ===================================
-# СКАЧИВАНИЕ МУЗЫКИ
+# СКАЧИВАНИЕ ПЕСНИ
 # ===================================
 
 async def download_song(query):
 
     try:
 
+        # Удаляем старый файл
+        if os.path.exists("song.mp3"):
+            os.remove("song.mp3")
+
         ydl_opts = {
+
+            # Лучшее аудио
             "format": "bestaudio/best",
+
+            # Имя файла
             "outtmpl": "song.%(ext)s",
+
+            # Без лишних логов
             "quiet": True,
+
+            # Только 1 видео
             "noplaylist": True,
+
+            # Конвертация в mp3
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
             info = ydl.extract_info(
-                f"ytsearch:{query}",
+                f"ytsearch1:{query}",
                 download=True
             )
 
+            # Первое найденное видео
             entry = info["entries"][0]
 
-            filename = ydl.prepare_filename(entry)
-
             return {
-                "file": filename,
+                "file": "song.mp3",
                 "title": entry.get("title"),
             }
 
-    except:
+    except Exception as e:
+
+        print(e)
+
         return None
 
 # ===================================
@@ -110,7 +134,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = lyrics_result
 
     await update.message.reply_text(
-        "⬇️ Скачиваю музыку..."
+        "⬇️ Скачиваю полный трек..."
     )
 
     # =========================
@@ -131,6 +155,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=f"🎵 {song['title']}"
                 )
 
+            # Удаляем файл после отправки
             os.remove(song["file"])
 
             return
@@ -138,7 +163,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
 
             await update.message.reply_text(
-                f"❌ Ошибка:\n{e}"
+                f"❌ Ошибка отправки:\n{e}"
             )
 
             return
