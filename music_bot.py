@@ -1,4 +1,5 @@
 import os
+import asyncio
 import yt_dlp
 
 from telegram import Update
@@ -113,5 +114,15 @@ def main():
     app.run_polling()
 
 
+# =========================
+# RUN
+# =========================
+
 if __name__ == "__main__":
+
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
     main()
