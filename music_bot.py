@@ -9,7 +9,7 @@ from telegram.ext import (
 )
 from yt_dlp import YoutubeDL
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("TOKEN")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
