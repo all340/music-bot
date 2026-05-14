@@ -1,5 +1,6 @@
 import os
 import yt_dlp
+
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -24,21 +25,34 @@ async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Ищу песню...")
 
     ydl_opts = {
-        "format": "bestaudio",
+        "format": "140/bestaudio/best",
         "outtmpl": "music.%(ext)s",
         "noplaylist": True,
         "cookiefile": "cookies.txt",
         "quiet": True,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android"]
+            }
+        },
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+
             info = ydl.extract_info(
                 f"ytsearch1:{query}",
                 download=True
             )
 
+            if "entries" not in info or not info["entries"]:
+                await update.message.reply_text(
+                    "Ничего не найдено 😢"
+                )
+                return
+
             video = info["entries"][0]
+
             filename = ydl.prepare_filename(video)
 
         await update.message.reply_audio(
@@ -55,9 +69,12 @@ async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
+    app.add_handler(
+        CommandHandler("start", start)
+    )
 
     app.add_handler(
         MessageHandler(
