@@ -15,9 +15,9 @@ from telegram.ext import (
 # TOKENS
 # ===================================
 
-TOKEN = "ТВОЙ_ТЕЛЕГРАМ_ТОКЕН"
+TOKEN = "ТОКЕН"
 
-GENIUS_TOKEN = "ТВОЙ_GENIUS_TOKEN"
+GENIUS_TOKEN = "QyxsQUjCY_LSuhvsUMKYItRcNSBQbmLhF87WDwSEX"
 
 # ===================================
 # GENIUS
