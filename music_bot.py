@@ -15,7 +15,7 @@ from telegram.ext import (
 # TOKENS
 # ===================================
 
-TOKEN = "ТОКЕН"
+TOKEN = "8511214476:AAFQy44u3yFVjHfZirAR6OoTks-jD8 vaxf8"
 
 GENIUS_TOKEN = "QyxsQUjCY_LSuhvsUMKYItRcNSBQbmLhF87WDwSEX"
 
