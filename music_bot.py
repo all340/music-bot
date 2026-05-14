@@ -1,6 +1,7 @@
 import os
-import yt_dlp
+import requests
 import lyricsgenius
+import yt_dlp
 
 from telegram import Update
 from telegram.ext import (
@@ -11,166 +12,118 @@ from telegram.ext import (
     filters,
 )
 
-# =====================================
-# TOKENS
-# =====================================
-
 TOKEN = os.getenv("TOKEN")
 GENIUS_TOKEN = os.getenv("GENIUS_TOKEN")
 
-# =====================================
-# GENIUS
-# =====================================
-
 genius = lyricsgenius.Genius(GENIUS_TOKEN)
 
-# =====================================
+
+# =========================
 # START
-# =====================================
+# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     await update.message.reply_text(
         "🎵 Музыкальный бот\n\n"
-        "📌 Отправь:\n"
+        "Отправь:\n"
         "- название песни\n"
-        "- или строчку из песни\n\n"
-        "Бот найдёт и отправит полный трек 🔥"
+        "- или строчку из песни"
     )
 
-# =====================================
-# ПОИСК ПЕСНИ ПО ТЕКСТУ
-# =====================================
 
-async def find_song_by_lyrics(text):
+# =========================
+# SEARCH BY LYRICS
+# =========================
 
+def find_song(text):
     try:
-
         song = genius.search_song(text)
 
-        if song:
-            return f"{song.artist} - {song.title}"
+        if not song:
+            return None
 
-    except Exception as e:
-        print(e)
+        return f"{song.artist} - {song.title}"
 
-    return text
+    except:
+        return None
 
-# =====================================
-# СКАЧИВАНИЕ ПОЛНОЙ ПЕСНИ
-# =====================================
 
-async def download_song(query):
+# =========================
+# DOWNLOAD MUSIC
+# =========================
+
+def download_music(query):
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": "song.%(ext)s",
+        "quiet": True,
+        "noplaylist": True,
+    }
 
     try:
-
-        # Удаляем старый файл
-        if os.path.exists("song.mp3"):
-            os.remove("song.mp3")
-
-        ydl_opts = {
-
-            # Лучшее аудио
-            "format": "bestaudio/best",
-
-            # Поиск
-            "default_search": "ytsearch",
-
-            # Имя файла
-            "outtmpl": "song.%(ext)s",
-
-            # Без логов
-            "quiet": True,
-
-            # Только одно видео
-            "noplaylist": True,
-
-            # Конвертация в mp3
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }],
-        }
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-
             info = ydl.extract_info(
-                f"{query} official audio",
+                f"ytsearch:{query}",
                 download=True
             )
 
-            if "entries" in info:
-                info = info["entries"][0]
+            entry = info["entries"][0]
 
-            return {
-                "file": "song.mp3",
-                "title": info.get("title", "Unknown")
-            }
+            filename = ydl.prepare_filename(entry)
 
-    except Exception as e:
+            return filename
 
-        print(e)
-
+    except:
         return None
 
-# =====================================
+
+# =========================
 # MUSIC HANDLER
-# =====================================
+# =========================
 
 async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    user_text = update.message.text
+    text = update.message.text
 
     await update.message.reply_text(
         "🔎 Ищу песню..."
     )
 
-    # Поиск песни по тексту
-    query = await find_song_by_lyrics(user_text)
+    query = find_song(text)
+
+    if not query:
+        query = text
 
     await update.message.reply_text(
-        "⬇️ Скачиваю полный трек..."
+        f"🎵 Найдено:\n{query}\n\n⬇️ Загружаю..."
     )
 
-    # Скачивание
-    song = await download_song(query)
+    file_path = download_music(query)
 
-    if not song:
-
+    if not file_path:
         await update.message.reply_text(
             "❌ Не удалось скачать песню"
         )
-
         return
 
     try:
-
-        with open(song["file"], "rb") as audio:
-
+        with open(file_path, "rb") as audio:
             await update.message.reply_audio(
-                audio=audio,
-                title=song["title"],
-                caption=f"🎵 {song['title']}"
+                audio=audio
             )
 
-        # Удаляем mp3 после отправки
-        os.remove(song["file"])
+        os.remove(file_path)
 
     except Exception as e:
-
-        print(e)
-
         await update.message.reply_text(
-            "❌ Ошибка отправки файла"
+            f"Ошибка:\n{e}"
         )
 
-# =====================================
+
+# =========================
 # MAIN
-# =====================================
+# =========================
 
 def main():
-
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(
@@ -188,9 +141,6 @@ def main():
 
     app.run_polling()
 
-# =====================================
-# START BOT
-# =====================================
 
 if __name__ == "__main__":
     main()
