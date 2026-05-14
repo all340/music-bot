@@ -1,6 +1,6 @@
 import os
-import asyncio
 import yt_dlp
+import asyncio
 
 from telegram import Update
 from telegram.ext import (
@@ -94,7 +94,7 @@ async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # MAIN
 # =========================
 
-def main():
+async def main():
 
     app = Application.builder().token(TOKEN).build()
 
@@ -111,7 +111,12 @@ def main():
 
     print("Бот запущен!")
 
-    app.run_polling()
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+
+    while True:
+        await asyncio.sleep(3600)
 
 
 # =========================
@@ -119,10 +124,4 @@ def main():
 # =========================
 
 if __name__ == "__main__":
-
-    try:
-        asyncio.get_event_loop()
-    except RuntimeError:
-        asyncio.set_event_loop(asyncio.new_event_loop())
-
-    main()
+    asyncio.run(main())
