@@ -20,16 +20,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     query = update.message.text
 
     await update.message.reply_text("Ищу песню...")
 
     ydl_opts = {
-        "format": "140/bestaudio/best",
-        "outtmpl": "music.%(ext)s",
+        "format": "140",
+        "outtmpl": "music.m4a",
         "noplaylist": True,
         "cookiefile": "cookies.txt",
         "quiet": True,
+        "socket_timeout": 30,
         "extractor_args": {
             "youtube": {
                 "player_client": ["android"]
@@ -38,6 +40,7 @@ async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     try:
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
             info = ydl.extract_info(
@@ -45,7 +48,7 @@ async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 download=True
             )
 
-            if "entries" not in info or not info["entries"]:
+            if not info.get("entries"):
                 await update.message.reply_text(
                     "Ничего не найдено 😢"
                 )
@@ -53,16 +56,15 @@ async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             video = info["entries"][0]
 
-            filename = ydl.prepare_filename(video)
-
         await update.message.reply_audio(
-            audio=open(filename, "rb"),
+            audio=open("music.m4a", "rb"),
             title=video.get("title", "Music")
         )
 
-        os.remove(filename)
+        os.remove("music.m4a")
 
     except Exception as e:
+
         await update.message.reply_text(
             f"Ошибка:\n{e}"
         )
