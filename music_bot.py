@@ -1,127 +1,77 @@
 import os
-import yt_dlp
-import asyncio
-
 from telegram import Update
 from telegram.ext import (
-    Application,
+    ApplicationBuilder,
     CommandHandler,
     MessageHandler,
     ContextTypes,
     filters,
 )
+from yt_dlp import YoutubeDL
 
-TOKEN = os.getenv("TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-
-# =========================
-# START
-# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     await update.message.reply_text(
-        "🎵 Отправь название песни"
+        "Привет! 🎵\n\n"
+        "Отправь название песни."
     )
 
 
-# =========================
-# SEARCH YOUTUBE
-# =========================
+async def search_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.message.text
 
-def search_song(query):
-
-    ydl_opts = {
-        "quiet": True,
-        "extract_flat": True,
-        "default_search": "ytsearch",
-    }
+    await update.message.reply_text("Ищу песню... 🔍")
 
     try:
+        ydl_opts = {
+            "format": "bestaudio",
+            "noplaylist": True,
+            "quiet": True,
+        }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-
+        with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(
-                query,
+                f"ytsearch:{query}",
                 download=False
             )
 
-            if "entries" not in info:
-                return None
+            if not info["entries"]:
+                await update.message.reply_text("Ничего не найдено 😢")
+                return
 
             video = info["entries"][0]
 
-            return {
-                "title": video.get("title"),
-                "url": f"https://youtube.com/watch?v={video.get('id')}"
-            }
+            title = video["title"]
+            url = video["webpage_url"]
+
+            await update.message.reply_text(
+                f"🎵 {title}\n\n{url}"
+            )
 
     except Exception as e:
-
-        print("ERROR:", e)
-
-        return None
-
-
-# =========================
-# MUSIC
-# =========================
-
-async def music(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    query = update.message.text
-
-    await update.message.reply_text(
-        "🔎 Ищу песню..."
-    )
-
-    result = search_song(query)
-
-    if not result:
-
         await update.message.reply_text(
-            "❌ Ничего не найдено"
+            f"Ошибка: {e}"
         )
 
-        return
 
-    await update.message.reply_text(
-        f"🎵 {result['title']}\n\n{result['url']}"
-    )
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-
-# =========================
-# MAIN
-# =========================
-
-async def main():
-
-    app = Application.builder().token(TOKEN).build()
-
-    app.add_handler(
-        CommandHandler("start", start)
-    )
+    app.add_handler(CommandHandler("start", start))
 
     app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
-            music
+            search_music
         )
     )
 
     print("Бот запущен!")
 
-    await app.initialize()
-    await app.start()
-    await app.updater.start_polling()
+    app.run_polling()
 
-    while True:
-        await asyncio.sleep(3600)
-
-
-# =========================
-# RUN
-# =========================
 
 if __name__ == "__main__":
     main()
