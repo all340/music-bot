@@ -1,5 +1,5 @@
 import os
-import yt_dlp
+import subprocess
 
 from telegram import Update
 from telegram.ext import (
@@ -10,65 +10,71 @@ from telegram.ext import (
     filters,
 )
 
-BOT_TOKEN = os.getenv("TOKEN")
+BOT_TOKEN = "ТОКЕН"
 
+COOKIES_PATH = "/storage/emulated/0/Download/cookies.txt"
+
+
+# =========================
+# START
+# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     await update.message.reply_text(
-        "Отправь название песни 🎵"
+        "🎵 Отправь название песни"
     )
 
+
+# =========================
+# DOWNLOAD MUSIC
+# =========================
 
 async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.message.text
 
-    await update.message.reply_text("Ищу песню...")
+    await update.message.reply_text(
+        "🔎 Ищу и скачиваю песню..."
+    )
 
-    ydl_opts = {
-        "format": "140",
-        "outtmpl": "music.m4a",
-        "noplaylist": True,
-        "cookiefile": "cookies.txt",
-        "quiet": True,
-        "socket_timeout": 30,
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["android"]
-            }
-        },
-    }
+    url = f"ytsearch1:{query}"
 
     try:
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        command = [
+            "yt-dlp",
+            "-x",
+            "--audio-format",
+            "mp3",
+            "--cookies",
+            COOKIES_PATH,
+            "-o",
+            "music.%(ext)s",
+            url
+        ]
 
-            info = ydl.extract_info(
-                f"ytsearch1:{query}",
-                download=True
-            )
+        subprocess.run(command, check=True)
 
-            if not info.get("entries"):
-                await update.message.reply_text(
-                    "Ничего не найдено 😢"
-                )
-                return
-
-            video = info["entries"][0]
+        audio_file = "music.mp3"
 
         await update.message.reply_audio(
-            audio=open("music.m4a", "rb"),
-            title=video.get("title", "Music")
+            audio=open(audio_file, "rb"),
+            title=query
         )
 
-        os.remove("music.m4a")
+        os.remove(audio_file)
 
     except Exception as e:
 
         await update.message.reply_text(
-            f"Ошибка:\n{e}"
+            f"❌ Ошибка:\n{e}"
         )
 
+
+# =========================
+# MAIN
+# =========================
 
 def main():
 
@@ -85,10 +91,14 @@ def main():
         )
     )
 
-    print("Бот запущен")
+    print("Бот запущен ✅")
 
     app.run_polling()
 
+
+# =========================
+# RUN
+# =========================
 
 if __name__ == "__main__":
     main()
