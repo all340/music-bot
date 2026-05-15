@@ -1,104 +1,85 @@
 import os
-import subprocess
+import yt_dlp
 
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
-    CommandHandler,
     MessageHandler,
     ContextTypes,
     filters,
 )
 
-BOT_TOKEN = "ТОКЕН"
+BOT_TOKEN = os.getenv("TOKEN")
 
-COOKIES_PATH = "/storage/emulated/0/Download/cookies.txt"
+COOKIE_FILE = "cookies.txt"
 
-
-# =========================
-# START
-# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     await update.message.reply_text(
-        "🎵 Отправь название песни"
+        "🎵 Отправь название песни или ссылку YouTube"
     )
 
-
-# =========================
-# DOWNLOAD MUSIC
-# =========================
 
 async def download_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     query = update.message.text
 
-    await update.message.reply_text(
-        "🔎 Ищу и скачиваю песню..."
-    )
+    await update.message.reply_text("🔍 Ищу музыку...")
 
-    url = f"ytsearch1:{query}"
+    if "youtube.com" in query or "youtu.be" in query:
+        url = query
+    else:
+        url = f"ytsearch1:{query}"
+
+    ydl_opts = {
+        "format": "bestaudio",
+        "outtmpl": "%(title)s.%(ext)s",
+        "noplaylist": True,
+        "cookiefile": COOKIE_FILE,
+        "quiet": True,
+        "extractaudio": True,
+        "audioformat": "mp3",
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }
+        ],
+    }
 
     try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
 
-        command = [
-            "yt-dlp",
-            "-x",
-            "--audio-format",
-            "mp3",
-            "--cookies",
-            COOKIES_PATH,
-            "-o",
-            "music.%(ext)s",
-            url
-        ]
+            if "entries" in info:
+                info = info["entries"][0]
 
-        subprocess.run(command, check=True)
-
-        audio_file = "music.mp3"
+            filename = ydl.prepare_filename(info)
+            filename = os.path.splitext(filename)[0] + ".mp3"
 
         await update.message.reply_audio(
-            audio=open(audio_file, "rb"),
-            title=query
+            audio=open(filename, "rb")
         )
 
-        os.remove(audio_file)
+        os.remove(filename)
 
     except Exception as e:
-
         await update.message.reply_text(
             f"❌ Ошибка:\n{e}"
         )
 
 
-# =========================
-# MAIN
-# =========================
-
 def main():
-
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(
-        CommandHandler("start", start)
+        MessageHandler(filters.TEXT & ~filters.COMMAND, download_music)
     )
 
-    app.add_handler(
-        MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            download_music
-        )
-    )
-
-    print("Бот запущен ✅")
+    print("✅ Бот запущен")
 
     app.run_polling()
 
-
-# =========================
-# RUN
-# =========================
 
 if __name__ == "__main__":
     main()
